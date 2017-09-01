@@ -1,0 +1,1 @@
+{"version":3,"sources":["main.css"],"names":[],"mappings":"AAAA,QACE,gBAAiB,AACjB,kBAAoB,CAAE","file":"main.min.css","sourcesContent":[".navbar {\n  margin-top: 1rem;\n  margin-bottom: 1rem; }\n"]}

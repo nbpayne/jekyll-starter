@@ -1,0 +1,27 @@
+{
+  "devDependencies": {
+    "csslint-stylish": "^0.0.6",
+    "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-csslint": "^1.0.0",
+    "gulp-cssnano": "^2.1.2",
+    "gulp-if": "^2.0.2",
+    "gulp-imagemin": "^3.3.0",
+    "gulp-jshint": "^2.0.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-sass": "^3.1.0",
+    "gulp-sourcemaps": "^2.0.0-alpha",
+    "gulp-uglify": "^3.0.0",
+    "gulp-useref": "^3.1.2",
+    "gulp-util": "^3.0.7",
+    "gutil-color-log": "^1.0.2",
+    "imagemin-pngquant": "^5.0.1",
+    "jshint": "^2.9.5",
+    "jshint-stylish": "^2.2.1",
+    "lazypipe": "^1.0.1",
+    "merge-stream": "^1.0.1",
+    "run-sequence": "^2.1.0",
+    "wiredep": "^4.0.0"
+  },
+  "dependencies": {}
+}
