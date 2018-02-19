@@ -40,7 +40,7 @@ gulp.task('css', function () {
       .pipe(cssnano())
       .pipe(rename({suffix:'.min'}))
       .pipe(sourcemaps.write('.'))
-      .pipe(gulp.dest('css')),
+      .pipe(gulp.dest('css/vendor')),
     // Build app css files
     gulp.src('__sass/*.scss')
       .pipe(sass())
