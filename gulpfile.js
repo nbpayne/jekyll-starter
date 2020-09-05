@@ -20,13 +20,13 @@ var useref = require('gulp-useref');
 var wiredep = require('wiredep').stream;
 
 // Clean out files
-gulp.task('clean', function () {
+gulp.task('clean', function (done) {
   return del([
     '_includes/head.html', 
     '_includes/foot.html', 
     'css/**/*.*', 
     'js/**/*.*'
-  ]);
+  ], done);
 });
 
 // Build css files
