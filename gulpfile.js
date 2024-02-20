@@ -1,18 +1,16 @@
 var gulp = require('gulp');
 var child = require('child_process');
 var csslint = require('gulp-csslint');
-var cssnano = require('gulp-cssnano');
+var cleanCSS = require('gulp-clean-css');
 var del = require('del');
 var gulpif = require('gulp-if');
-// var imagemin = require('gulp-imagemin');
 var jshint = require('gulp-jshint');
 var gulputil = require('gulp-util');
 var lazypipe = require('lazypipe');
 var log = require('gutil-color-log');
 var merge = require('merge-stream');
-// var pngquant = require('imagemin-pngquant');
 var rename = require('gulp-rename');
-var sass = require('gulp-sass');
+var sass = require('gulp-sass')(require('sass'));
 var sourcemaps = require('gulp-sourcemaps');
 var stylish = require('csslint-stylish');
 var uglify = require('gulp-uglify');
@@ -20,13 +18,13 @@ var useref = require('gulp-useref');
 var wiredep = require('wiredep').stream;
 
 // Clean out files
-gulp.task('clean', function (done) {
+gulp.task('clean', function () {
   return del([
     '_includes/head.html', 
     '_includes/foot.html', 
     'css/**/*.*', 
     'js/**/*.*'
-  ], done);
+  ]);
 });
 
 // Build css files
@@ -36,7 +34,7 @@ gulp.task('css', function () {
     gulp.src('__sass/vendor/*.scss')
       .pipe(sass())
       .pipe(sourcemaps.init())
-      .pipe(cssnano())
+      .pipe(cleanCSS())
       .pipe(rename({suffix:'.min'}))
       .pipe(sourcemaps.write('.'))
       .pipe(gulp.dest('css/vendor')),
@@ -46,7 +44,7 @@ gulp.task('css', function () {
       .pipe(csslint())
       .pipe(csslint.formatter(stylish))
       .pipe(sourcemaps.init())
-      .pipe(cssnano())
+      .pipe(cleanCSS())
       .pipe(rename({suffix:'.min'}))
       .pipe(sourcemaps.write('.'))
       .pipe(gulp.dest('css'))
@@ -57,7 +55,9 @@ gulp.task('css', function () {
 gulp.task('jekyll-serve', function () {
   const jekyll = child.spawn('jekyll', [
     'serve', 
-    '--livereload'
+    '--livereload',
+    '--drafts',
+    '--future'
   ]);
   const jekyllLogger = (buffer) => {
     buffer.toString()
