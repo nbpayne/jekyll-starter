@@ -1,58 +1,77 @@
-var gulp = require('gulp');
-var child = require('child_process');
-var csslint = require('gulp-csslint');
-var cleanCSS = require('gulp-clean-css');
-var del = require('del');
-var gulpif = require('gulp-if');
-var jshint = require('gulp-jshint');
-var gulputil = require('gulp-util');
-var lazypipe = require('lazypipe');
-var log = require('gutil-color-log');
-var merge = require('merge-stream');
-var rename = require('gulp-rename');
-var sass = require('gulp-sass')(require('sass'));
-var sourcemaps = require('gulp-sourcemaps');
-var stylish = require('csslint-stylish');
-var uglify = require('gulp-uglify');
-var useref = require('gulp-useref');
-var wiredep = require('wiredep').stream;
+const { dest, parallel, src, series, watch } = require('gulp');
+const { deleteSync } = require('del');
 
-// Clean out files
-gulp.task('clean', function () {
-  return del([
-    '_includes/head.html', 
+const sass = require('gulp-sass')(require('sass'));
+const sourcemaps = require('gulp-sourcemaps');
+const cleanCSS = require('gulp-clean-css');
+const rename = require('gulp-rename');
+const wiredep = require('wiredep').stream;
+const eslint = require('gulp-eslint');
+const lazypipe = require('lazypipe');
+const useref = require('gulp-useref');
+const gulpif = require('gulp-if');
+const uglify = require('gulp-uglify');
+const child = require('child_process');
+const log = require('gutil-color-log');
+
+// Delete files that will be regenerated
+function clean(cb) {
+  console.log("Deleting files...");
+  let deletedFiles = deleteSync([
     '_includes/foot.html', 
+    '_includes/head.html', 
     'css/**/*.*', 
     'js/**/*.*'
-  ]);
-});
+  ], { dryRun: false });
+  console.log(deletedFiles);
+  cb();
+}
 
-// Build css files
-gulp.task('css', function () {
-  return merge(
-    // Build vendor css files
-    gulp.src('__sass/vendor/*.scss')
-      .pipe(sass())
-      .pipe(sourcemaps.init())
-      .pipe(cleanCSS())
-      .pipe(rename({suffix:'.min'}))
-      .pipe(sourcemaps.write('.'))
-      .pipe(gulp.dest('css/vendor')),
-    // Build app css files
-    gulp.src('__sass/*.scss')
-      .pipe(sass())
-      .pipe(csslint())
-      .pipe(csslint.formatter(stylish))
-      .pipe(sourcemaps.init())
-      .pipe(cleanCSS())
-      .pipe(rename({suffix:'.min'}))
-      .pipe(sourcemaps.write('.'))
-      .pipe(gulp.dest('css'))
-  );
-});
+// Lint, build and minify CSS
+function css(cb) {
+  return src('__sass/**/*.scss')
+    .pipe(sass({
+      silenceDeprecations: ['color-functions', 'global-builtin', 'import']
+    }).on('error', sass.logError))
+    .pipe(dest('css'))
+    .pipe(sourcemaps.init())
+    .pipe(cleanCSS())
+    .pipe(rename({suffix:'.min'}))
+    .pipe(sourcemaps.write('.'))
+    .pipe(dest('css'));
+}
 
-// Run `jekyll serve`
-gulp.task('jekyll-serve', function () {
+// Wire bower dependencies into head and foot includes
+function wireDependencies(cb) {
+  return src('__includes/*.html')
+    .pipe(wiredep())
+    .pipe(dest('__includes'));
+}
+
+// Lint custom Javascript
+function lintJS(cb) {
+  return src('__js/**/*.js')
+    .pipe(eslint())
+    .pipe(eslint.format())
+    .pipe(eslint.failAfterError());
+}
+
+// Minify Javascript
+function js(cb) {
+  const processJS = lazypipe()
+    .pipe(() => sourcemaps.init())
+    .pipe(() => uglify())
+    .pipe(() => sourcemaps.write('.'))
+    .pipe(() => dest('.'));
+
+  return src('__includes/**/*.html')
+    .pipe(useref())
+    .pipe(gulpif('*.js', processJS()))
+    .pipe(gulpif('*.html', dest('_includes')));
+}
+
+// Build the site using Jekyll, serve it, and watch for changes
+function jekyllServe(cb) {
   const jekyll = child.spawn('jekyll', [
     'serve', 
     '--livereload',
@@ -66,55 +85,36 @@ gulp.task('jekyll-serve', function () {
   };
   jekyll.stdout.on('data', jekyllLogger);
   jekyll.stderr.on('data', jekyllLogger);
-});
+  cb();
+}
 
-// Build javascript files
-gulp.task('js', function () {
-  // Lint, sourcemap, and uglify final js files
-  // var lintjs = lazypipe()
-  //   .pipe(jshint)
-  //   .pipe(jshint.reporter, 'jshint-stylish');
+// Watch CSS and Javascript for changes
+function liveReload() {
+  watch('__sass/**/*.scss', css),
+  watch('__js/**/*.js', series(lintJS, js))
+};
 
-  var processjs = lazypipe()
-    .pipe(sourcemaps.init)
-    .pipe(uglify)
-    .pipe(sourcemaps.write, '.')
-    .pipe(gulp.dest, '.');
-
-  return gulp.src('__includes/*.html')
-    .pipe(useref())
-    .pipe(gulpif('*.js', processjs()))
-    .pipe(gulpif('*.html', gulp.dest('_includes')));
-});
-
-// Watch for file changes
-gulp.task('watch', function () {
-  // Watch files
-  gulp.watch('__sass/**/*.scss', gulp.series('css'));
-  gulp.watch(['__includes/*.html', '__js/**/*.js'], gulp.series('js'));
-});
-
-// Wire bower dependencies
-gulp.task('wiredep', function() {
-  return gulp.src('__includes/*.html')
-    .pipe(wiredep())
-    .pipe(gulp.dest('__includes'));
-});
-
-
-// --------------------------------------------------------------------------------------------------------------------
-// Meta-tasks
-// - defeault: same as `serve`
-// - serve: compile all assets, and start jekyll
-// --------------------------------------------------------------------------------------------------------------------
-
-gulp.task('serve',
-  gulp.series(
-    'clean', 
-    gulp.parallel('css', 'wiredep'), 
-    'js',
-    gulp.parallel('jekyll-serve', 'watch')
-  )
+//-----------------------------------------------------------------------------
+// Main 'tasks':
+// - build: build the site
+// - liveReload: watch CSS and Javascript for changes
+// - Default: build and then watch for changes
+//-----------------------------------------------------------------------------
+exports.build = series(
+  clean, 
+  parallel(css, wireDependencies),
+  lintJS,
+  js, 
+  jekyllServe
 );
 
-gulp.task('default', gulp.series('serve'));
+exports.liveReload = liveReload;
+
+exports.default = series(
+  clean, 
+  parallel(css, wireDependencies),
+  lintJS,
+  js, 
+  jekyllServe,
+  liveReload
+);
