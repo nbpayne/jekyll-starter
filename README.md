@@ -1,48 +1,64 @@
 # jekyll-starter
 
-Starter template for a Jekyll site including:
+A starter template for a Jekyll site with a Gulp-based asset pipeline that handles SCSS compilation, JS bundling/minification, and livereload during development.
 
-- Gulp tasks to improve the speed of development by:
-- Automatically wiring bower dependencies
-- Building bootstrap CSS from SASS
-- Building app CSS from SASS
-- Minifying CSS, and creating sourcemaps
-- Combining vendor JS files, linting, minifying, and creating sourcemaps
-- Combining app JS files, linting, minifying, and creating sourcemaps
-- Livereloading the site during development
+## What's included
+
+- Jekyll for static site generation
+- Bootstrap 5 + jQuery via Yarn, bundled by Gulp
+- SCSS compilation with sourcemaps
+- JS linting (ESLint), concatenation, and uglification with sourcemaps
+- Jekyll livereload during development
 
 ## Installation
 
-1. Download the start template from here: https://github.com/nbpayne/jekyll-starter/archive/master.zip.
-2. Unzip into a new directory.
-3. Run `bundle install` to install Jekyll, and plugins.
-4. Change directory and run `yarn` or `npm install` to install all server dependencies
-5. Run `bower install` to install the client dependencies
-6. Run `gulp serve`
-7. Open http://127.0.0.1:4000 and view the site
+1. Clone or download this repository.
+2. Run `bundle install` to install Jekyll and Ruby gems.
+3. Run `yarn` to install Node dependencies (Gulp, Bootstrap, jQuery, etc.).
+4. Run `gulp` to build and start the development server.
+5. Open `http://127.0.0.1:4000`.
+
+## Commands
+
+| Command | Description |
+|---|---|
+| `gulp` | Full build, start Jekyll with livereload, watch for changes |
+| `gulp build` | Full build and start Jekyll (no file watching) |
+| `gulp liveReload` | Watch `__sass/` and `__js/` only (when Jekyll is already running) |
 
 ## Directory structure
 
 ```
 .
-├── __includes/       # Wiredep injects bower dependencies into `head.html`, and `foot.html` inside this folder. `gulp js` builds these files to `_includes/`. 
-├── __js/             # Create your javascript files here. `gulp js` builds them to `js/`.
-├── __sass/           # Place your SASS files here. `gulp css` builds these to `css/`.
-├── _includes/        # `head.html`, and `foot.html` are built to here. Other includes can also be placed in this folder.
-├── _layouts/         # Jekyll layouts.
-├── _site/            # Jekyll builds the site into this folder.
-├── bower_components/ # Bower dependencies are installed here. This folder is not built by Jekyll.
-├── css/              # SASS files are built into CSS files, and served from here.
-├── js/               # JS files a built, and served from here.
-├── node_modules/     # Server dependencies. This folder is not built by Jekyll.
-├── .gitignore        # Make sure Git ignores stuff we don't need.
-├── 404.html          # Example 404 page.
-├── _config.yml       # Jekyll config.
-├── about.md          # Example about page.
-├── bower.json        # Bower dependencies defined here.
-├── Gemfile           # Jekyll gem is listed here.
-├── gulpfile.js       # Gulp tasks.
-├── package.json      # NPM modules used by Gulp.
-├── README.md         # This README.
-└── robots.txt        # Robots file
+├── __js/          # Your JS source files — built to js/app.min.js
+├── __sass/        # Your SCSS source files — built to css/
+├── _includes/     # Jekyll partials (head.html, foot.html, header.html, footer.html)
+├── _layouts/      # Jekyll layouts
+├── _site/         # Jekyll build output (not committed)
+├── css/           # Built CSS (do not edit directly)
+├── js/            # Built JS (do not edit directly)
+├── _config.yml    # Jekyll configuration
+├── eslint.config.js
+├── gulpfile.js
+├── Gemfile
+└── package.json
 ```
+
+## Asset pipeline
+
+The Gulp build runs in this order: **clean → css → lintJS → js → jekyllServe**
+
+- **CSS**: `__sass/**/*.scss` is compiled to `css/main.css` (unminified) and `css/main.min.css` (minified, with sourcemap).
+- **JS**: Three bundles are produced in `js/`:
+  - `vendor.min.js` — jQuery (from `node_modules`)
+  - `bootstrap.min.js` — Bootstrap JS (from `node_modules`)
+  - `app.min.js` — your code from `__js/`
+- **Linting**: ESLint runs on `__js/**/*.js` before bundling and fails the build on errors.
+
+Files in `css/` and `js/` are regenerated on every build — edit the sources in `__sass/` and `__js/` instead.
+
+## Jekyll configuration
+
+Edit `_config.yml` for site-wide settings. Changes to `_config.yml` require restarting Jekyll (re-run `gulp`). The dev server runs with `--livereload`, `--drafts`, and `--future` enabled.
+
+Content pages are Markdown files at the repo root (`index.md`, `about.md`, etc.).
