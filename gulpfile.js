@@ -1,26 +1,24 @@
-const { dest, parallel, src, series, watch } = require('gulp');
-const { deleteSync } = require('del');
+import { dest, src, series, watch } from 'gulp';
+import { deleteSync } from 'del';
+import gulpSassPlugin from 'gulp-sass';
+import * as dartSass from 'sass';
+import sourcemaps from 'gulp-sourcemaps';
+import cleanCSS from 'gulp-clean-css';
+import rename from 'gulp-rename';
+import eslint from 'gulp-eslint-new';
+import concat from 'gulp-concat';
+import merge from 'merge-stream';
+import uglify from 'gulp-uglify';
+import { spawn } from 'child_process';
+import log from 'gutil-color-log';
 
-const sass = require('gulp-sass')(require('sass'));
-const sourcemaps = require('gulp-sourcemaps');
-const cleanCSS = require('gulp-clean-css');
-const rename = require('gulp-rename');
-const wiredep = require('wiredep').stream;
-const eslint = require('gulp-eslint');
-const lazypipe = require('lazypipe');
-const useref = require('gulp-useref');
-const gulpif = require('gulp-if');
-const uglify = require('gulp-uglify');
-const child = require('child_process');
-const log = require('gutil-color-log');
+const sass = gulpSassPlugin(dartSass);
 
 // Delete files that will be regenerated
 function clean(cb) {
   console.log("Deleting files...");
   let deletedFiles = deleteSync([
-    '_includes/foot.html', 
-    '_includes/head.html', 
-    'css/**/*.*', 
+    'css/**/*.*',
     'js/**/*.*'
   ], { dryRun: false });
   console.log(deletedFiles);
@@ -28,52 +26,49 @@ function clean(cb) {
 }
 
 // Lint, build and minify CSS
-function css(cb) {
+function css() {
   return src('__sass/**/*.scss')
     .pipe(sass({
-      silenceDeprecations: ['color-functions', 'global-builtin', 'import']
+      loadPaths: ['node_modules'],
+      silenceDeprecations: ['color-functions', 'global-builtin', 'if-function', 'import']
     }).on('error', sass.logError))
     .pipe(dest('css'))
     .pipe(sourcemaps.init())
     .pipe(cleanCSS())
-    .pipe(rename({suffix:'.min'}))
+    .pipe(rename({ suffix: '.min' }))
     .pipe(sourcemaps.write('.'))
     .pipe(dest('css'));
 }
 
-// Wire bower dependencies into head and foot includes
-function wireDependencies(cb) {
-  return src('__includes/*.html')
-    .pipe(wiredep())
-    .pipe(dest('__includes'));
-}
-
 // Lint custom Javascript
-function lintJS(cb) {
+function lintJS() {
   return src('__js/**/*.js')
     .pipe(eslint())
     .pipe(eslint.format())
     .pipe(eslint.failAfterError());
 }
 
-// Minify Javascript
-function js(cb) {
-  const processJS = lazypipe()
-    .pipe(() => sourcemaps.init())
-    .pipe(() => uglify())
-    .pipe(() => sourcemaps.write('.'))
-    .pipe(() => dest('.'));
+// Bundle and minify Javascript
+function js() {
+  const bundle = (input, output) =>
+    src(input)
+      .pipe(sourcemaps.init())
+      .pipe(uglify())
+      .pipe(concat(output))
+      .pipe(sourcemaps.write('.'))
+      .pipe(dest('js'));
 
-  return src('__includes/**/*.html')
-    .pipe(useref())
-    .pipe(gulpif('*.js', processJS()))
-    .pipe(gulpif('*.html', dest('_includes')));
+  return merge(
+    bundle('node_modules/jquery/dist/jquery.js', 'vendor.min.js'),
+    bundle('node_modules/bootstrap/dist/js/bootstrap.js', 'bootstrap.min.js'),
+    bundle('__js/**/*.js', 'app.min.js')
+  );
 }
 
 // Build the site using Jekyll, serve it, and watch for changes
 function jekyllServe(cb) {
-  const jekyll = child.spawn('jekyll', [
-    'serve', 
+  const jekyll = spawn('jekyll', [
+    'serve',
     '--livereload',
     '--drafts',
     '--future'
@@ -90,9 +85,9 @@ function jekyllServe(cb) {
 
 // Watch CSS and Javascript for changes
 function liveReload() {
-  watch('__sass/**/*.scss', css),
-  watch('__js/**/*.js', series(lintJS, js))
-};
+  watch('__sass/**/*.scss', css);
+  watch('__js/**/*.js', series(lintJS, js));
+}
 
 //-----------------------------------------------------------------------------
 // Main 'tasks':
@@ -100,21 +95,8 @@ function liveReload() {
 // - liveReload: watch CSS and Javascript for changes
 // - Default: build and then watch for changes
 //-----------------------------------------------------------------------------
-exports.build = series(
-  clean, 
-  parallel(css, wireDependencies),
-  lintJS,
-  js, 
-  jekyllServe
-);
+export { clean, css, lintJS, js, liveReload };
 
-exports.liveReload = liveReload;
+export const build = series(clean, css, lintJS, js, jekyllServe);
 
-exports.default = series(
-  clean, 
-  parallel(css, wireDependencies),
-  lintJS,
-  js, 
-  jekyllServe,
-  liveReload
-);
+export default series(clean, css, lintJS, js, jekyllServe, liveReload);

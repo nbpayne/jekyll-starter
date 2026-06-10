@@ -31,8 +31,6 @@ plugins:
   - jekyll-seo
   - jekyll-sitemap
 exclude:
-  - bower_components
-  - bower.json
   - Gemfile
   - Gemfile.lock
   - gulpfile.js
