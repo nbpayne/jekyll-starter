@@ -7,9 +7,9 @@ import rename from 'gulp-rename';
 import eslint from 'gulp-eslint-new';
 import concat from 'gulp-concat';
 import merge from 'merge-stream';
-import uglify from 'gulp-uglify';
+import terser from 'gulp-terser';
 import { spawn } from 'child_process';
-import log from 'gutil-color-log';
+import chalk from 'chalk';
 
 const sass = gulpSassPlugin(dartSass);
 
@@ -49,7 +49,7 @@ function lintJS() {
 function js() {
   const bundle = (input, output) =>
     src(input)
-      .pipe(uglify())
+      .pipe(terser())
       .pipe(concat(output))
       .pipe(dest('js'));
 
@@ -71,7 +71,7 @@ function jekyllServe(cb) {
   const jekyllLogger = (buffer) => {
     buffer.toString()
       .split(/\n/)
-      .forEach((message) => log('yellow', 'Jekyll: ' + message));
+      .forEach((message) => console.log(chalk.yellow('Jekyll: ' + message)));
   };
   jekyll.stdout.on('data', jekyllLogger);
   jekyll.stderr.on('data', jekyllLogger);
