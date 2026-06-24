@@ -27,5 +27,6 @@
     "gulp-terser": "^2.1.0",
     "merge-stream": "^2.0.0",
     "sass": "~1.100.0"
-  }
+  },
+  "packageManager": "yarn@4.17.0"
 }
