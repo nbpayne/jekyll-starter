@@ -62,7 +62,9 @@ function js() {
 
 // Build the site using Jekyll, serve it, and watch for changes
 function jekyllServe(cb) {
-  const jekyll = spawn('jekyll', [
+  const jekyll = spawn('bundle', [
+    'exec',
+    'jekyll',
     'serve',
     '--livereload',
     '--drafts',
